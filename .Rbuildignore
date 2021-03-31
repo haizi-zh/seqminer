@@ -1,6 +1,10 @@
+^renv$
+^renv\.lock$
 ^\.gitignore$
 ^\.travis\.yml$
 ^\.git$
 ^appveyor\.yml$
 .*~$
 .github
+^.*\.Rproj$
+^\.Rproj\.user$

@@ -601,19 +601,19 @@ ti_index_t *ti_index_load_local(const char *fnidx)
 }
 
 #ifdef _USE_KNETFILE
-static void download_from_remote(const char *url)
+static void download_from_remote(const char *url, const char *fnidx)
 {
   const int buf_size = 1 * 1024 * 1024;
-  char *fn;
+  char *fn = fnidx;
   FILE *fp;
   uint8_t *buf;
   knetFile *fp_remote;
   int l;
   if (strstr(url, "ftp://") != url && strstr(url, "http://") != url) return;
   l = strlen(url);
-  for (fn = (char*)url + l - 1; fn >= url; --fn)
-    if (*fn == '/') break;
-  ++fn; // fn now points to the file name
+  // for (fn = (char*)url + l - 1; fn >= url; --fn)
+  //   if (*fn == '/') break;
+  // ++fn; // fn now points to the file name
   fp_remote = knet_open(url, "r");
   if (fp_remote == 0) {
     REprintf( "[download_from_remote] fail to open remote file.\n");
@@ -632,7 +632,7 @@ static void download_from_remote(const char *url)
   knet_close(fp_remote);
 }
 #else
-static void download_from_remote(const char *url)
+static void download_from_remote(const char *url, const char *fnidx)
 {
   return;
 }
@@ -648,13 +648,33 @@ static char *get_local_version(const char *fn)
     int l = strlen(fnidx);
     for (p = fnidx + l - 1; p >= fnidx; --p)
       if (*p == '/') break;
-    url = fnidx; fnidx = strdup(p + 1);
+    url = fnidx;
+
+    // Get a temporary file name for the index
+    // Determine the platform specific temporary file directory
+    char *tfn = tempnam(NULL, NULL);
+    char *p1;
+    for (p1 = tfn + strlen(tfn)-1; p1 >= tfn;  --p1)
+      if (*p1 == '/') break;
+    // p1 now points to the laste '/'
+
+    // This is the temporary file directory. E.g. /var/tmp
+    char *tmpdir = (char*)calloc(strlen(tfn) + 1, 1);
+    strncpy(tmpdir, tfn, p1 - tfn);
+    free(tfn);
+
+    fnidx = (char*)calloc(strlen(tmpdir) + 5 + 64, 1);
+    // File naming rules: /tmp/seqminer_tabix_idx_{original_file}.tbi.{timestamp/100}, i.e. we allow 100s expiration time
+    sprintf(fnidx, "%s/seqminer_tabix_idx_%s.%lu", tmpdir, p + 1, (unsigned long)time(NULL) / 100);
+    free(tmpdir);
+
+    // fnidx = strdup(p + 1);
     if (stat(fnidx, &sbuf) == 0) {
       free(url);
       return fnidx;
     }
-    REprintf( "[%s] downloading the index file...\n", __func__);
-    download_from_remote(url);
+    REprintf( "[%s] downloading the index file %s to %s...\n", __func__, url, fnidx);
+    download_from_remote(url, fnidx);
     free(url);
   }
   if (stat(fnidx, &sbuf) == 0) return fnidx;
