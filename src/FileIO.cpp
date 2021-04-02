@@ -9,7 +9,7 @@ AbstractFileReader* AbstractFileReader::open(const char* fileName) {
   }
 
 #ifdef _USE_KNETFILE
-  if (strstr(fileName, "ftp://") == fileName || strstr(fileName, "http://") == fileName) {
+  if (strstr(fileName, "ftp://") == fileName || strstr(fileName, "http://") == fileName || strstr(fileName, "https://") == fileName || strstr(fileName, "ftps://") == fileName) {
     fr = new KnetFileReader(fileName);
     REprintf("open knetfile %s\n", fileName);
     return fr;

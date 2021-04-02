@@ -609,7 +609,7 @@ static void download_from_remote(const char *url, const char *fnidx)
   uint8_t *buf;
   knetFile *fp_remote;
   int l;
-  if (strstr(url, "ftp://") != url && strstr(url, "http://") != url) return;
+  if (strstr(url, "ftp://") != url && strstr(url, "http://") != url && strstr(url, "https://") != url && strstr(url, "ftps://") != url) return;
   l = strlen(url);
   // for (fn = (char*)url + l - 1; fn >= url; --fn)
   //   if (*fn == '/') break;
@@ -643,7 +643,7 @@ static char *get_local_version(const char *fn)
   struct stat sbuf;
   char *fnidx = (char*)calloc(strlen(fn) + 5, 1);
   strcat(strcpy(fnidx, fn), ".tbi");
-  if ((strstr(fnidx, "ftp://") == fnidx || strstr(fnidx, "http://") == fnidx)) {
+  if (strstr(fnidx, "ftp://") == fnidx || strstr(fnidx, "http://") == fnidx || strstr(fnidx, "https://") == fnidx || strstr(fnidx, "ftps://") == fnidx) {
     char *p, *url;
     int l = strlen(fnidx);
     for (p = fnidx + l - 1; p >= fnidx; --p)

@@ -384,13 +384,23 @@ knetFile *khttp_parse_url(const char *fn, const char *mode)
         knetFile *fp;
         char *p, *proxy, *q;
         int l;
-        if (strstr(fn, "http://") != fn) return 0;
+        if (strstr(fn, "http://") != fn && strstr(fn, "https://") != fn) return 0;
+        
+        char default_port[64];
+        int scheme_len;
+        if (strstr(fn, "http://") == fn) {
+            scheme_len = 7;
+            strcpy(default_port, "80");
+        } else {
+            scheme_len = 8;
+            strcpy(default_port, "443");
+        }
         // set ->http_host
-        for (p = (char*)fn + 7; *p && *p != '/'; ++p);
-        l = p - fn - 7;
+        for (p = (char*)fn + scheme_len; *p && *p != '/'; ++p);
+        l = p - fn - scheme_len;
         fp = calloc(1, sizeof(knetFile));
         fp->http_host = calloc(l + 1, 1);
-        strncpy(fp->http_host, fn + 7, l);
+        strncpy(fp->http_host, fn + scheme_len, l);
         fp->http_host[l] = 0;
         for (q = fp->http_host; *q && *q != ':'; ++q);
         if (*q == ':') *q++ = 0;
@@ -399,7 +409,7 @@ knetFile *khttp_parse_url(const char *fn, const char *mode)
         // set ->host, ->port and ->path
         if (proxy == 0) {
                 fp->host = strdup(fp->http_host); // when there is no proxy, server name is identical to http_host name.
-                fp->port = strdup(*q? q : "80");
+                fp->port = strdup(*q? q : default_port);
                 fp->path = strdup(*p? p : "/");
         } else {
                 fp->host = (strstr(proxy, "http://") == proxy)? strdup(proxy + 7) : strdup(proxy);
@@ -473,7 +483,7 @@ knetFile *knet_open(const char *fn, const char *mode)
                 REprintf("[kftp_open] only mode \"r\" is supported.\n");
                 return 0;
         }
-        if (strstr(fn, "ftp://") == fn) {
+        if (strstr(fn, "ftp://") == fn || strstr(fn, "ftps://") == fn) {
                 fp = kftp_parse_url(fn, mode);
                 if (fp == 0) return 0;
                 if (kftp_connect(fp) == -1) {
@@ -481,8 +491,9 @@ knetFile *knet_open(const char *fn, const char *mode)
                         return 0;
                 }
                 kftp_connect_file(fp);
-        } else if (strstr(fn, "http://") == fn) {
+        } else if (strstr(fn, "http://") == fn || strstr(fn, "https://") == fn) {
                 fp = khttp_parse_url(fn, mode);
+                REprintf("[knet_open] %s, %s, %s ## %s\n", fp->host, fp->port, fp->path, fp->http_host);
                 if (fp == 0) return 0;
                 khttp_connect_file(fp);
         } else { // local file

@@ -18,8 +18,8 @@ NULL
 #' @param fileName character vector
 #' @keywords internal
 isURL <- function(fileName) {
-  if (all(grepl(pattern = "^http://", fileName) |
-          grepl(pattern = "^ftp://", fileName) )) {
+  if (all(grepl(pattern = "^http[s]?://", fileName) |
+          grepl(pattern = "^ftp[s]?://", fileName) )) {
     return(TRUE)
   }
   return(FALSE)
